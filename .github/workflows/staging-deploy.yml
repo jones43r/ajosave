@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
 permissions:  # least-privilege CI tokens (#108)
   contents: read
   deployments: write   # create GitHub Deployments

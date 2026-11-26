@@ -29,6 +29,37 @@ export function withAdminAuth(handler: Handler): Handler {
   return withAuthorization(handler, { roles: ["admin"] });
 }
 
+/**
+ * Sanitizes all string fields in the JSON request body before the handler
+ * runs, stripping HTML tags and replacing non-finite numbers with null.
+ * Uses `sanitizeBody` from `@/lib/sanitize`.
+ */
+export function withSanitizedBody(handler: Handler): Handler {
+  return async (req, ctx) => {
+    const cloned = req.clone() as NextRequest;
+    const contentType = req.headers.get("content-type") ?? "";
+    if (contentType.toLowerCase().includes("application/json")) {
+      let body: unknown;
+      try {
+        body = await cloned.json();
+      } catch {
+        body = undefined;
+      }
+      if (body !== undefined) {
+        const sanitized = sanitizeBody(body);
+        // Rebuild the request with the sanitised body so the handler sees clean data.
+        const sanitizedReq = new NextRequest(req.url, {
+          method: req.method,
+          headers: req.headers,
+          body: JSON.stringify(sanitized),
+        });
+        return handler(sanitizedReq, ctx);
+      }
+    }
+    return handler(req, ctx);
+  };
+}
+
 export function withErrorHandler(handler: Handler): Handler {
   return async (req, ctx) => {
     const correlationId =

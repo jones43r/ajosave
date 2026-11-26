@@ -19,6 +19,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: restore-drill
+  cancel-in-progress: true
+
 permissions:  # least-privilege CI tokens (#108)
   contents: read
 

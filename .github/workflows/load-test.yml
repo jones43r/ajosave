@@ -16,6 +16,10 @@ on:
     paths:
       - "k6/**"
 
+concurrency:
+  group: load-test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   load-test:
     name: k6 Payout Load Test

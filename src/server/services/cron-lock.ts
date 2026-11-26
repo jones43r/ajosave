@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 /**
  * Cron lock utility to prevent overlapping executions of scheduled jobs.
  *

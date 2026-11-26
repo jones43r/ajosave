@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/date-formatting";
+import { useLocale } from "next-intl";
 import styles from "./PayoutHistory.module.css";
 import type { ContributionRow } from "@/server/services/contribution.service";
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ContributionHistory({ circleId, initialData }: Props) {
+  const locale = useLocale();
   const [rows, setRows] = useState<ContributionRow[] | null>(initialData?.data ?? null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState<number | null>(initialData?.total ?? null);
@@ -70,7 +72,7 @@ export function ContributionHistory({ circleId, initialData }: Props) {
                 <td>{r.cycleNumber}</td>
                 <td>{r.memberName}</td>
                 <td>{parseFloat(r.amountUsdc).toFixed(2)}</td>
-                <td>{format(new Date(r.createdAt), "MMM d, yyyy")}</td>
+                <td>{formatDate(new Date(r.createdAt), locale)}</td>
                 <td>{r.status}</td>
               </tr>
             ))}

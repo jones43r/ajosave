@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useRef, useTransition } from "react";
 import type { CircleFilters } from "@/types";
 import styles from "./CircleFiltersForm.module.css";
 
@@ -21,6 +21,7 @@ export function CircleFiltersForm({ filters }: CircleFiltersFormProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Build a new URLSearchParams from the current ones, applying a patch. */
   const updateParams = useCallback(
@@ -47,7 +48,23 @@ export function CircleFiltersForm({ filters }: CircleFiltersFormProps) {
 
   const handleSearch = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      updateParams({ search: e.target.value });
+      const value = e.target.value;
+      
+      // Clear any pending debounce timer
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      // If clearing the search, cancel immediately
+      if (value === "") {
+        updateParams({ search: "" });
+        return;
+      }
+
+      // Debounce the search with 350ms delay
+      searchTimeoutRef.current = setTimeout(() => {
+        updateParams({ search: value });
+      }, 350);
     },
     [updateParams]
   );

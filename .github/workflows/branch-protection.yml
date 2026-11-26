@@ -7,6 +7,10 @@ on:
     paths:
       - ".github/workflows/branch-protection.yml"
 
+concurrency:
+  group: branch-protection
+  cancel-in-progress: true
+
 jobs:
   protect:
     name: Enforce main branch protection

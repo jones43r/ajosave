@@ -2,6 +2,10 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");
 
+    if (process.env.NODE_ENV === "production" && !process.env.PAYSTACK_SECRET_KEY) {
+      throw new Error("PAYSTACK_SECRET_KEY must be set: Paystack webhook signatures cannot be verified");
+    }
+
     if (process.env.NODE_ENV === "production") {
       const runner: any = await import("node-pg-migrate");
       const path = await import("path");

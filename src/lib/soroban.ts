@@ -230,3 +230,44 @@ export async function invokeContractSetPayoutOrder(
   const innerXdr: string = assembled.toXDR();
   return wrapWithFeeBump(innerXdr);
 }
+
+/**
+ * Read AjoContract.check_invariants() via simulation (issue #444).
+ * Returns the expected locked balance, the actual token balance and their delta.
+ */
+export async function readContractInvariants(
+  contractId: string
+): Promise<{ expected: bigint; actual: bigint; delta: bigint }> {
+  const client = await contract.Client.from({
+    contractId,
+    networkPassphrase,
+    rpcUrl: serverConfig.stellar.sorobanRpcUrl,
+  });
+
+  // @ts-expect-error — method generated from contract ABI at runtime
+  const tx = await client.check_invariants();
+  const [expected, actual, delta] = tx.result as [bigint, bigint, bigint];
+  return { expected: BigInt(expected), actual: BigInt(actual), delta: BigInt(delta) };
+}
+
+/**
+ * Invoke AjoContract.pause() via Soroban RPC (emergency halt, issue #444).
+ *
+ * @returns The Soroban transaction hash
+ */
+export async function invokeContractPause(contractId: string): Promise<string> {
+  const keypair = Keypair.fromSecret(serverConfig.stellar.serverSecretKey);
+  const signer = contract.basicNodeSigner(keypair, networkPassphrase);
+
+  const client = await contract.Client.from({
+    contractId,
+    networkPassphrase,
+    rpcUrl: serverConfig.stellar.sorobanRpcUrl,
+    publicKey: keypair.publicKey(),
+    ...signer,
+  });
+
+  // @ts-expect-error — method generated from contract ABI at runtime
+  const assembled = await client.pause();
+  return wrapWithFeeBump(assembled.toXDR());
+}

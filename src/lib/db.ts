@@ -54,6 +54,7 @@ function getPool(): Pool {
 
     pool.on("acquire", (_client) => {
       console.log("[db] Client acquired from pool");
+      checkPoolUtilisation(maxPoolSize);
     });
 
     pool.on("remove", (_client) => {
@@ -68,6 +69,20 @@ function getPool(): Pool {
     console.log(`[db] Connection pool initialized (min: ${minPoolSize}, max: ${maxPoolSize})`);
   }
   return pool;
+}
+
+/** Utilisation ratio (0–1) above which a pool-exhaustion alert is emitted. */
+export const POOL_UTILISATION_ALERT_THRESHOLD = 0.8;
+
+function checkPoolUtilisation(maxPoolSize: number): void {
+  if (!pool || maxPoolSize <= 0) return;
+  const inUse = pool.totalCount - pool.idleCount;
+  const utilisation = inUse / maxPoolSize;
+  if (utilisation > POOL_UTILISATION_ALERT_THRESHOLD) {
+    console.warn(
+      `[db] ALERT pool utilisation ${(utilisation * 100).toFixed(0)}% exceeds ${POOL_UTILISATION_ALERT_THRESHOLD * 100}% (in use: ${inUse}/${maxPoolSize}, waiting: ${pool.waitingCount})`
+    );
+  }
 }
 
 /**
@@ -103,6 +118,17 @@ export function getPoolStats() {
     idleCount: pool.idleCount,
     waitingCount: pool.waitingCount,
   };
+}
+
+/**
+ * Pool metrics for Prometheus export: size, total, idle, waiting and utilisation.
+ */
+export function getPoolMetrics() {
+  const size = parseInt(process.env.DB_POOL_SIZE ?? "10", 10);
+  const total = pool?.totalCount ?? 0;
+  const idle = pool?.idleCount ?? 0;
+  const waiting = pool?.waitingCount ?? 0;
+  return { size, total, idle, waiting, utilisation: size > 0 ? (total - idle) / size : 0 };
 }
 
 /**
